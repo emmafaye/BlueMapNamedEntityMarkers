@@ -18,11 +18,11 @@
       <id>papermc</id>
       <url>https://repo.papermc.io/repository/maven-public/</url>
     </repository>
-    
-    <!-- JitPack Repo (Fallback repository for GitHub hosted projects) -->
+
+    <!-- Modrinth Maven Repo (Reliable artifact mirror for BlueMap) -->
     <repository>
-      <id>jitpack.io</id>
-      <url>https://jitpack.io</url>
+      <id>modrinth-repo</id>
+      <url>https://api.modrinth.com/maven</url>
     </repository>
   </repositories>
 
@@ -35,11 +35,11 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- BlueMap API via JitPack -->
+    <!-- BlueMap via Modrinth Maven -->
     <dependency>
-      <groupId>com.github.BlueMap-Minecraft</groupId>
-      <artifactId>BlueMapAPI</artifactId>
-      <version>v2.7.3</version>
+      <groupId>maven.modrinth</groupId>
+      <artifactId>bluemap</artifactId>
+      <version>5.21-paper</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
