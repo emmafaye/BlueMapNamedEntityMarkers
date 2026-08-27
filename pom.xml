@@ -7,39 +7,39 @@
   <version>1.0.0</version>
 
   <properties>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <repositories>
-    <!-- PaperMC Repo -->
+    <!-- PaperMC Repository -->
     <repository>
       <id>papermc</id>
       <url>https://repo.papermc.io/repository/maven-public/</url>
     </repository>
 
-    <!-- Modrinth Maven Repo (Reliable artifact mirror for BlueMap) -->
+    <!-- Official BlueMap Releases Repository -->
     <repository>
-      <id>modrinth-repo</id>
-      <url>https://api.modrinth.com/maven</url>
+      <id>bluecolored-releases</id>
+      <url>https://repo.bluecolored.de/releases</url>
     </repository>
   </repositories>
 
   <dependencies>
-    <!-- Paper API -->
+    <!-- Paper API for Minecraft 1.20.4+ -->
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>1.20.1-R0.1-SNAPSHOT</version>
+      <version>1.20.4-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
 
-    <!-- BlueMap via Modrinth Maven -->
+    <!-- Official BlueMap API (Clean interface-only dependency) -->
     <dependency>
-      <groupId>maven.modrinth</groupId>
-      <artifactId>bluemap</artifactId>
-      <version>5.21-paper</version>
+      <groupId>de.bluecolored.bluemap</groupId>
+      <artifactId>BlueMapAPI</artifactId>
+      <version>2.7.3</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -49,7 +49,10 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.10.1</version>
+        <version>3.11.0</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
       </plugin>
     </plugins>
   </build>
