@@ -18,6 +18,12 @@
       <id>papermc</id>
       <url>https://repo.papermc.io/repository/maven-public/</url>
     </repository>
+    
+    <!-- JitPack Repo (Fallback repository for GitHub hosted projects) -->
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -29,11 +35,11 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- BlueMap API (Hosted natively on Maven Central) -->
+    <!-- BlueMap API via JitPack -->
     <dependency>
-      <groupId>de.bluecolored</groupId>
-      <artifactId>bluemap-api</artifactId>
-      <version>2.7.8</version>
+      <groupId>com.github.BlueMap-Minecraft</groupId>
+      <artifactId>BlueMapAPI</artifactId>
+      <version>v2.7.3</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
