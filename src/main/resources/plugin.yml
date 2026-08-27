@@ -1,0 +1,5 @@
+name: NamedEntityMarkers
+version: 1.0.0
+main: com.example.bluemapnamedentities.NamedEntityMarkers
+api-version: '1.20'
+softdepend: [BlueMap]
