@@ -5,9 +5,7 @@ import de.bluecolored.bluemap.api.markers.HtmlMarker;
 import de.bluecolored.bluemap.api.markers.MarkerSet;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Tameable;
+import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.nio.charset.StandardCharsets;
@@ -47,11 +45,10 @@ public class NamedEntityMarkers extends JavaPlugin {
                             String fontColor = getOwnerColor(entity);
                             String headTexture = getMobHeadKey(entity);
 
-                            // Uses CSS variables for zoom-based scaling and label visibility
                             String htmlSnippet = String.format(
-                                "<div style=\"display: flex; flex-direction: column; align-items: center; transform: translate(-50%%, -50%%); pointer-events: auto;\">" +
-                                "  <div class=\"bm-marker-label\" style=\"background: rgba(0, 0, 0, 0.85); color: %s; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: sans-serif; margin-bottom: 3px; border: 1px solid rgba(255, 255, 255, 0.15); white-space: nowrap; display: var(--bm-marker-label-display, block);\">%s</div>" +
-                                "  <img src=\"https://mc-heads.net/avatar/%s/32\" style=\"width: var(--bm-marker-size, 32px); height: var(--bm-marker-size, 32px); border-radius: 3px; transition: width 0.2s, height 0.2s;\" />" +
+                                "<div class=\"bm-player-marker\" style=\"display: flex; flex-direction: column; align-items: center; pointer-events: auto;\">" +
+                                "  <div class=\"bm-player-label\" style=\"background: rgba(0, 0, 0, 0.85); color: %s; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: sans-serif; margin-bottom: 2px; border: 1px solid rgba(255, 255, 255, 0.15); white-space: nowrap;\">%s</div>" +
+                                "  <img class=\"bm-player-head\" src=\"https://mc-heads.net/avatar/%s/32\" style=\"width: 24px; height: 24px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.5);\" />" +
                                 "</div>",
                                 fontColor,
                                 escapeHtml(name),
@@ -62,6 +59,7 @@ public class NamedEntityMarkers extends JavaPlugin {
                                 .label(name)
                                 .position(entity.getLocation().getX(), entity.getLocation().getY() + 0.5, entity.getLocation().getZ())
                                 .html(htmlSnippet)
+                                .styleClasses("bm-player-marker-container")
                                 .build();
 
                             markerSet.getMarkers().put(markerId, marker);
@@ -94,11 +92,39 @@ public class NamedEntityMarkers extends JavaPlugin {
     }
 
     private String getMobHeadKey(Entity entity) {
-        String typeName = entity.getType().name().toUpperCase();
+        // 1. Check for Wolf Variants (Ashen, Black, Chestnut, Pale, Rusty, Snowy, Spotted, Striped, Woods)
+        if (entity instanceof Wolf wolf) {
+            String variantStr = wolf.getVariant().getKey().getKey().toLowerCase();
+            return switch (variantStr) {
+                case "ashen" -> "MHF_Wolf_Ashen";
+                case "black" -> "MHF_Wolf_Black";
+                case "chestnut" -> "MHF_Wolf_Chestnut";
+                case "rusty" -> "MHF_Wolf_Rusty";
+                case "snowy" -> "MHF_Wolf_Snowy";
+                case "spotted" -> "MHF_Wolf_Spotted";
+                case "striped" -> "MHF_Wolf_Striped";
+                case "woods" -> "MHF_Wolf_Woods";
+                default -> "MHF_Wolf"; // Default Pale wolf
+            };
+        }
 
+        // 2. Check for Cat Types
+        if (entity instanceof Cat cat) {
+            String catType = cat.getCatType().getKey().getKey().toLowerCase();
+            return switch (catType) {
+                case "black" -> "MHF_Cat_Black";
+                case "siamese" -> "MHF_Cat_Siamese";
+                case "tabby" -> "MHF_Cat_Tabby";
+                case "calico" -> "MHF_Cat_Calico";
+                case "persian" -> "MHF_Cat_Persian";
+                case "ragdoll" -> "MHF_Cat_Ragdoll";
+                default -> "MHF_Ocelot";
+            };
+        }
+
+        // 3. Fallbacks for basic Mob Types
+        String typeName = entity.getType().name().toUpperCase();
         return switch (typeName) {
-            case "WOLF" -> "MHF_Wolf";
-            case "CAT", "OCELOT" -> "MHF_Ocelot";
             case "PIG" -> "MHF_Pig";
             case "COW" -> "MHF_Cow";
             case "SHEEP" -> "MHF_Sheep";
