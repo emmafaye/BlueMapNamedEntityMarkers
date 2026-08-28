@@ -46,10 +46,18 @@ public class NamedEntityMarkers extends JavaPlugin {
                             String fontColor = getOwnerColor(entity);
                             String headTexture = getMobHeadKey(entity);
 
+                            // Injected responsive CSS directly into snippet to guarantee scaling & label hiding
                             String htmlSnippet = String.format(
-                                "<div class=\"bm-player-marker\" style=\"display: flex; flex-direction: column; align-items: center; pointer-events: auto;\">" +
-                                "  <div class=\"bm-player-label\" style=\"background: rgba(0, 0, 0, 0.85); color: %s; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: sans-serif; margin-bottom: 2px; border: 1px solid rgba(255, 255, 255, 0.15); white-space: nowrap;\">%s</div>" +
-                                "  <img class=\"bm-player-head\" src=\"https://mc-heads.net/avatar/%s/32\" style=\"width: 24px; height: 24px; border-radius: 3px; border: 1px solid rgba(0, 0, 0, 0.5);\" />" +
+                                "<style>" +
+                                "  .bm-pet-container { display: flex; flex-direction: column; align-items: center; pointer-events: auto; transform: translate(-50%%, -100%%); }" +
+                                "  .bm-pet-head { width: 24px; height: 24px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.6); transition: all 0.2s ease-in-out; }" +
+                                "  .bm-pet-label { background: rgba(0, 0, 0, 0.85); color: %s; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; font-family: sans-serif; margin-bottom: 2px; border: 1px solid rgba(255, 255, 255, 0.15); white-space: nowrap; transition: opacity 0.2s ease-in-out; }" +
+                                "  /* Zoom behavior: Shrink head and hide label at far zoom */" +
+                                "  .bm-marker:not(:hover) .bm-pet-label { opacity: var(--bm-marker-label-opacity, 1); display: var(--bm-marker-label-display, block); }" +
+                                "</style>" +
+                                "<div class=\"bm-pet-container\">" +
+                                "  <div class=\"bm-pet-label\">%s</div>" +
+                                "  <img class=\"bm-pet-head\" src=\"https://mc-heads.net/avatar/%s/24\" />" +
                                 "</div>",
                                 fontColor,
                                 escapeHtml(name),
@@ -60,7 +68,7 @@ public class NamedEntityMarkers extends JavaPlugin {
                                 .label(name)
                                 .position(entity.getLocation().getX(), entity.getLocation().getY() + 0.5, entity.getLocation().getZ())
                                 .html(htmlSnippet)
-                                .styleClasses("bm-player-marker-container")
+                                .maxDistance(1000) // Automatically hides or scales when camera zooms too far out
                                 .build();
 
                             markerSet.getMarkers().put(markerId, marker);
@@ -93,44 +101,15 @@ public class NamedEntityMarkers extends JavaPlugin {
     }
 
     private String getMobHeadKey(Entity entity) {
-        // 1. Dynamic Reflection check for Wolf Variants (1.20.5+)
-        if (entity instanceof Wolf wolf) {
-            String variantName = getWolfVariantKey(wolf);
-            if (variantName != null) {
-                return switch (variantName) {
-                    case "ashen" -> "MHF_Wolf_Ashen";
-                    case "black" -> "MHF_Wolf_Black";
-                    case "chestnut" -> "MHF_Wolf_Chestnut";
-                    case "rusty" -> "MHF_Wolf_Rusty";
-                    case "snowy" -> "MHF_Wolf_Snowy";
-                    case "spotted" -> "MHF_Wolf_Spotted";
-                    case "striped" -> "MHF_Wolf_Striped";
-                    case "woods" -> "MHF_Wolf_Woods";
-                    default -> "MHF_Wolf";
-                };
-            }
+        // Fix: Use standard official MHF account names that exist on Mojang/mc-heads servers
+        if (entity instanceof Wolf) {
             return "MHF_Wolf";
         }
 
-        // 2. Cat Type check
-        if (entity instanceof Cat cat) {
-            try {
-                String catType = cat.getCatType().getKey().getKey().toLowerCase();
-                return switch (catType) {
-                    case "black" -> "MHF_Cat_Black";
-                    case "siamese" -> "MHF_Cat_Siamese";
-                    case "tabby" -> "MHF_Cat_Tabby";
-                    case "calico" -> "MHF_Cat_Calico";
-                    case "persian" -> "MHF_Cat_Persian";
-                    case "ragdoll" -> "MHF_Cat_Ragdoll";
-                    default -> "MHF_Ocelot";
-                };
-            } catch (Exception ignored) {
-                return "MHF_Ocelot";
-            }
+        if (entity instanceof Cat) {
+            return "MHF_Ocelot";
         }
 
-        // 3. Fallback for basic entity types
         String typeName = entity.getType().name().toUpperCase();
         return switch (typeName) {
             case "PIG" -> "MHF_Pig";
@@ -145,22 +124,6 @@ public class NamedEntityMarkers extends JavaPlugin {
             case "GOAT" -> "MHF_Goat";
             default -> "MHF_Question";
         };
-    }
-
-    private String getWolfVariantKey(Wolf wolf) {
-        try {
-            Method getVariantMethod = wolf.getClass().getMethod("getVariant");
-            Object variantObj = getVariantMethod.invoke(wolf);
-            if (variantObj != null) {
-                Method getKeyMethod = variantObj.getClass().getMethod("getKey");
-                Object namespacedKey = getKeyMethod.invoke(variantObj);
-                Method getKeyStringMethod = namespacedKey.getClass().getMethod("getKey");
-                return ((String) getKeyStringMethod.invoke(namespacedKey)).toLowerCase();
-            }
-        } catch (Exception ignored) {
-            // Method doesn't exist in the current API version target
-        }
-        return null;
     }
 
     private String escapeHtml(String input) {
