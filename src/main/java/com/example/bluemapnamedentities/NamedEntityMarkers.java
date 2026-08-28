@@ -7,7 +7,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Tameable;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 public class NamedEntityMarkers extends JavaPlugin {
 
@@ -41,14 +45,16 @@ public class NamedEntityMarkers extends JavaPlugin {
                             String name = entity.getCustomName();
                             String markerId = "entity-" + entity.getUniqueId();
                             
-                            // Always use mob texture instead of player owner skin
+                            // Determine text color based on owner
+                            String fontColor = getOwnerColor(entity);
                             String headTexture = getMobHeadKey(entity);
 
                             String htmlSnippet = String.format(
                                 "<div style=\"display:flex; flex-direction:column; align-items:center; transform:translate(-50%%, -100%%); pointer-events:auto;\">" +
-                                "  <div style=\"background:rgba(0,0,0,0.75); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; font-family:sans-serif; margin-bottom:2px;\">%s</div>" +
+                                "  <div style=\"background:rgba(0,0,0,0.85); color:%s; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; font-family:sans-serif; margin-bottom:2px; border: 1px solid rgba(255,255,255,0.15);\">%s</div>" +
                                 "  <img src=\"https://mc-heads.net/avatar/%s/24\" style=\"width:24px; height:24px; border-radius:3px;\" />" +
                                 "</div>",
+                                fontColor,
                                 escapeHtml(name),
                                 headTexture
                             );
@@ -67,23 +73,47 @@ public class NamedEntityMarkers extends JavaPlugin {
         }
     }
 
-    private String getMobHeadKey(Entity entity) {
-        switch (entity.getType()) {
-            case WOLF: return "MHF_Wolf";
-            case CAT:
-            case OCELOT: return "MHF_Ocelot";
-            case PIG: return "MHF_Pig";
-            case COW: return "MHF_Cow";
-            case SHEEP: return "MHF_Sheep";
-            case VILLAGER: return "MHF_Villager";
-            case CHICKEN: return "MHF_Chicken";
-            case SKELETON: return "MHF_Skeleton";
-            case ZOMBIE: return "MHF_Zombie";
-            case SPIDER: return "MHF_Spider";
-            case ENDERMAN: return "MHF_Enderman";
-            case ALEX: return "Alex";
-            default: return "MHF_Question"; // Fallback icon for rare/unmapped mob heads
+    private String getOwnerColor(Entity entity) {
+        if (entity instanceof Tameable pet && pet.isTamed() && pet.getOwner() != null) {
+            String ownerName = pet.getOwner().getName();
+            if (ownerName != null && !ownerName.isEmpty()) {
+                return generateColorFromSeed(ownerName);
+            }
         }
+        return "#FFFFFF"; // Fallback to white if non-tameable or unowned
+    }
+
+    private String generateColorFromSeed(String seed) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(seed.getBytes(StandardCharsets.UTF_8));
+            
+            // Generate vibrant pastel-like HSL color from hash
+            int hue = Math.abs((hash[0] << 8 | (hash[1] & 0xFF))) % 360;
+            return String.format("hsl(%d, 85%%, 65%%)", hue);
+        } catch (Exception e) {
+            return "#FFD700"; // Fallback gold
+        }
+    }
+
+    private String getMobHeadKey(Entity entity) {
+        String typeName = entity.getType().name().toUpperCase();
+
+        return switch (typeName) {
+            case "WOLF" -> "MHF_Wolf";
+            case "CAT", "OCELOT" -> "MHF_Ocelot";
+            case "PIG" -> "MHF_Pig";
+            case "COW" -> "MHF_Cow";
+            case "SHEEP" -> "MHF_Sheep";
+            case "VILLAGER" -> "MHF_Villager";
+            case "CHICKEN" -> "MHF_Chicken";
+            case "SKELETON" -> "MHF_Skeleton";
+            case "ZOMBIE" -> "MHF_Zombie";
+            case "SPIDER" -> "MHF_Spider";
+            case "ENDERMAN" -> "MHF_Enderman";
+            case "GOAT" -> "MHF_Goat";
+            default -> "MHF_Question";
+        };
     }
 
     private String escapeHtml(String input) {
