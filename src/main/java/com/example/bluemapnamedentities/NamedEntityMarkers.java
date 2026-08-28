@@ -10,8 +10,6 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Tameable;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Optional;
-
 public class NamedEntityMarkers extends JavaPlugin {
 
     private static final String MARKER_SET_ID = "bm-named-entities";
@@ -19,59 +17,59 @@ public class NamedEntityMarkers extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Register with BlueMap API when it becomes available
+        // Register hook into BlueMap API
         BlueMapAPI.onEnable(api -> {
-            // Create or retrieve the toggleable Marker Set
-            MarkerSet markerSet = api.getMarkerSets().computeIfAbsent(MARKER_SET_ID, id -> 
-                MarkerSet.builder()
-                    .label(MARKER_SET_LABEL)
-                    .toggleable(true)
-                    .defaultHidden(false)
-                    .build()
-            );
-
-            // Schedule a repeating task to scan loaded entities every 5 seconds (100 ticks)
-            Bukkit.getScheduler().runTaskTimer(this, () -> updateEntityMarkers(api, markerSet), 20L, 100L);
+            // Run entity update task every 5 seconds (100 ticks)
+            Bukkit.getScheduler().runTaskTimer(this, () -> updateEntityMarkers(api), 20L, 100L);
         });
     }
 
-    private void updateEntityMarkers(BlueMapAPI api, MarkerSet markerSet) {
-        // Clear old markers from the set
-        markerSet.getMarkers().clear();
-
+    private void updateEntityMarkers(BlueMapAPI api) {
         for (World world : Bukkit.getWorlds()) {
             api.getWorld(world).ifPresent(blueWorld -> {
-                for (Entity entity : world.getEntities()) {
-                    // Filter for entities with custom names or tamed pets
-                    if (isNamedOrPet(entity) && entity instanceof LivingEntity) {
-                        String name = entity.getCustomName() != null 
-                                ? entity.getCustomName() 
-                                : entity.getType().name();
+                // Loop through all maps registered to this world
+                blueWorld.getMaps().forEach(map -> {
+                    // Get or create the toggleable MarkerSet on the map
+                    MarkerSet markerSet = map.getMarkerSets().computeIfAbsent(MARKER_SET_ID, id -> 
+                        MarkerSet.builder()
+                            .label(MARKER_SET_LABEL)
+                            .toggleable(true)
+                            .defaultHidden(false)
+                            .build()
+                    );
 
-                        String markerId = "entity-" + entity.getUniqueId();
-                        
-                        // Default skin head or MHF fallback
-                        String headTexture = getHeadTextureKey(entity);
+                    // Clear previous iteration markers
+                    markerSet.getMarkers().clear();
 
-                        String htmlSnippet = String.format(
-                            "<div style=\"display:flex; flex-direction:column; align-items:center; transform:translate(-50%%, -100%%); pointer-events:auto;\">" +
-                            "  <div style=\"background:rgba(0,0,0,0.75); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; font-family:sans-serif; margin-bottom:2px;\">%s</div>" +
-                            "  <img src=\"https://mc-heads.net/avatar/%s/24\" style=\"width:24px; height:24px; border-radius:3px;\" />" +
-                            "</div>",
-                            escapeHtml(name),
-                            headTexture
-                        );
+                    // Scan entities currently loaded in this world
+                    for (Entity entity : world.getEntities()) {
+                        if (isNamedOrPet(entity) && entity instanceof LivingEntity) {
+                            String name = entity.getCustomName() != null 
+                                    ? entity.getCustomName() 
+                                    : entity.getType().name();
 
-                        HtmlMarker marker = HtmlMarker.builder()
-                            .label(name)
-                            .position(entity.getLocation().getX(), entity.getLocation().getY() + 0.5, entity.getLocation().getZ())
-                            .html(htmlSnippet)
-                            .build();
+                            String markerId = "entity-" + entity.getUniqueId();
+                            String headTexture = getHeadTextureKey(entity);
 
-                        // Add marker to every map instance belonging to this world
-                        blueWorld.getMaps().forEach(map -> markerSet.getMarkers().put(markerId, marker));
+                            String htmlSnippet = String.format(
+                                "<div style=\"display:flex; flex-direction:column; align-items:center; transform:translate(-50%%, -100%%); pointer-events:auto;\">" +
+                                "  <div style=\"background:rgba(0,0,0,0.75); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; font-family:sans-serif; margin-bottom:2px;\">%s</div>" +
+                                "  <img src=\"https://mc-heads.net/avatar/%s/24\" style=\"width:24px; height:24px; border-radius:3px;\" />" +
+                                "</div>",
+                                escapeHtml(name),
+                                headTexture
+                            );
+
+                            HtmlMarker marker = HtmlMarker.builder()
+                                .label(name)
+                                .position(entity.getLocation().getX(), entity.getLocation().getY() + 0.5, entity.getLocation().getZ())
+                                .html(htmlSnippet)
+                                .build();
+
+                            markerSet.getMarkers().put(markerId, marker);
+                        }
                     }
-                }
+                });
             });
         }
     }
@@ -90,7 +88,7 @@ public class NamedEntityMarkers extends JavaPlugin {
                 return pet.getOwner().getUniqueId().toString();
             }
         }
-        // Fallback to MHF head textures by mob type
+        
         switch (entity.getType()) {
             case WOLF: return "MHF_Wolf";
             case OCELOT:
