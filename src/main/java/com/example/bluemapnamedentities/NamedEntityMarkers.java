@@ -8,6 +8,7 @@ import org.bukkit.World;
 import org.bukkit.entity.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
@@ -92,37 +93,44 @@ public class NamedEntityMarkers extends JavaPlugin {
     }
 
     private String getMobHeadKey(Entity entity) {
-        // 1. Check for Wolf Variants (Ashen, Black, Chestnut, Pale, Rusty, Snowy, Spotted, Striped, Woods)
+        // 1. Dynamic Reflection check for Wolf Variants (1.20.5+)
         if (entity instanceof Wolf wolf) {
-            String variantStr = wolf.getVariant().getKey().getKey().toLowerCase();
-            return switch (variantStr) {
-                case "ashen" -> "MHF_Wolf_Ashen";
-                case "black" -> "MHF_Wolf_Black";
-                case "chestnut" -> "MHF_Wolf_Chestnut";
-                case "rusty" -> "MHF_Wolf_Rusty";
-                case "snowy" -> "MHF_Wolf_Snowy";
-                case "spotted" -> "MHF_Wolf_Spotted";
-                case "striped" -> "MHF_Wolf_Striped";
-                case "woods" -> "MHF_Wolf_Woods";
-                default -> "MHF_Wolf"; // Default Pale wolf
-            };
+            String variantName = getWolfVariantKey(wolf);
+            if (variantName != null) {
+                return switch (variantName) {
+                    case "ashen" -> "MHF_Wolf_Ashen";
+                    case "black" -> "MHF_Wolf_Black";
+                    case "chestnut" -> "MHF_Wolf_Chestnut";
+                    case "rusty" -> "MHF_Wolf_Rusty";
+                    case "snowy" -> "MHF_Wolf_Snowy";
+                    case "spotted" -> "MHF_Wolf_Spotted";
+                    case "striped" -> "MHF_Wolf_Striped";
+                    case "woods" -> "MHF_Wolf_Woods";
+                    default -> "MHF_Wolf";
+                };
+            }
+            return "MHF_Wolf";
         }
 
-        // 2. Check for Cat Types
+        // 2. Cat Type check
         if (entity instanceof Cat cat) {
-            String catType = cat.getCatType().getKey().getKey().toLowerCase();
-            return switch (catType) {
-                case "black" -> "MHF_Cat_Black";
-                case "siamese" -> "MHF_Cat_Siamese";
-                case "tabby" -> "MHF_Cat_Tabby";
-                case "calico" -> "MHF_Cat_Calico";
-                case "persian" -> "MHF_Cat_Persian";
-                case "ragdoll" -> "MHF_Cat_Ragdoll";
-                default -> "MHF_Ocelot";
-            };
+            try {
+                String catType = cat.getCatType().getKey().getKey().toLowerCase();
+                return switch (catType) {
+                    case "black" -> "MHF_Cat_Black";
+                    case "siamese" -> "MHF_Cat_Siamese";
+                    case "tabby" -> "MHF_Cat_Tabby";
+                    case "calico" -> "MHF_Cat_Calico";
+                    case "persian" -> "MHF_Cat_Persian";
+                    case "ragdoll" -> "MHF_Cat_Ragdoll";
+                    default -> "MHF_Ocelot";
+                };
+            } catch (Exception ignored) {
+                return "MHF_Ocelot";
+            }
         }
 
-        // 3. Fallbacks for basic Mob Types
+        // 3. Fallback for basic entity types
         String typeName = entity.getType().name().toUpperCase();
         return switch (typeName) {
             case "PIG" -> "MHF_Pig";
@@ -137,6 +145,22 @@ public class NamedEntityMarkers extends JavaPlugin {
             case "GOAT" -> "MHF_Goat";
             default -> "MHF_Question";
         };
+    }
+
+    private String getWolfVariantKey(Wolf wolf) {
+        try {
+            Method getVariantMethod = wolf.getClass().getMethod("getVariant");
+            Object variantObj = getVariantMethod.invoke(wolf);
+            if (variantObj != null) {
+                Method getKeyMethod = variantObj.getClass().getMethod("getKey");
+                Object namespacedKey = getKeyMethod.invoke(variantObj);
+                Method getKeyStringMethod = namespacedKey.getClass().getMethod("getKey");
+                return ((String) getKeyStringMethod.invoke(namespacedKey)).toLowerCase();
+            }
+        } catch (Exception ignored) {
+            // Method doesn't exist in the current API version target
+        }
+        return null;
     }
 
     private String escapeHtml(String input) {
